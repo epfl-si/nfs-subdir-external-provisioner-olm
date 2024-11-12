@@ -29,7 +29,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
 # epfl.ch/nfs-subdir-external-provisioner-olm-bundle:$VERSION and epfl.ch/nfs-subdir-external-provisioner-olm-catalog:$VERSION.
-IMAGE_TAG_BASE ?= epfl.ch/nfs-subdir-external-provisioner-olm
+IMAGE_TAG_BASE ?= quay-its.epfl.ch/svc0041/nfs-subdir-external-provisioner-olm
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
 # You can use it as an arg. (E.g make bundle-build BUNDLE_IMG=<some-registry>/<project-name-bundle>:<tag>)
