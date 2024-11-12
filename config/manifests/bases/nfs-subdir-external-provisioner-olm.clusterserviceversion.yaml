@@ -1,0 +1,46 @@
+apiVersion: operators.coreos.com/v1alpha1
+kind: ClusterServiceVersion
+metadata:
+  annotations:
+    alm-examples: '[]'
+    capabilities: Basic Install
+  name: nfs-subdir-external-provisioner-olm.v0.0.0
+  namespace: placeholder
+spec:
+  apiservicedefinitions: {}
+  customresourcedefinitions: {}
+  description: NFS subdir external provisioner OLM operator
+  displayName: NFS subdir external provisioner OLM operator
+  icon:
+  - base64data: ""
+    mediatype: ""
+  install:
+    spec:
+      deployments: null
+    strategy: ""
+  installModes:
+  - supported: false
+    type: OwnNamespace
+  - supported: false
+    type: SingleNamespace
+  - supported: false
+    type: MultiNamespace
+  - supported: true
+    type: AllNamespaces
+  keywords:
+  - nfs
+  - subdir
+  - provisioner
+  - olm
+  - operator
+  links:
+  - name: Nfs Subdir External Provisioner Olm
+    url: https://nfs-subdir-external-provisioner-olm.domain
+  maintainers:
+  - email: isas-fsd@groupes.epfl.ch
+    name: ISAS-FSD
+  maturity: alpha
+  provider:
+    name: epfl.ch
+    url: github.com/epfl-si
+  version: 0.0.0
