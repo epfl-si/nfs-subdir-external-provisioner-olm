@@ -1,0 +1,54 @@
+apiVersion: nfs.epfl.ch/v1alpha1
+kind: NfsSubdirProvisioner
+metadata:
+  name: nfssubdirprovisioner-sample
+spec:
+  # Default values copied from <project_dir>/helm-charts/nfs-subdir-external-provisioner/values.yaml
+  affinity: {}
+  image:
+    pullPolicy: IfNotPresent
+    repository: registry.k8s.io/sig-storage/nfs-subdir-external-provisioner
+    tag: v4.0.2
+  imagePullSecrets: []
+  labels: {}
+  leaderElection:
+    enabled: true
+  nfs:
+    mountOptions: null
+    path: /nfs-storage
+    reclaimPolicy: Retain
+    server: null
+    volumeName: nfs-subdir-external-provisioner-root
+  nodeSelector: {}
+  podAnnotations: {}
+  podDisruptionBudget:
+    enabled: false
+    maxUnavailable: 1
+  podSecurityContext: {}
+  podSecurityPolicy:
+    enabled: false
+  rbac:
+    create: true
+  replicaCount: 1
+  resources: {}
+  securityContext: {}
+  serviceAccount:
+    annotations: {}
+    create: true
+    name: null
+  storageClass:
+    accessModes: ReadWriteOnce
+    allowVolumeExpansion: true
+    annotations: {}
+    archiveOnDelete: true
+    create: true
+    defaultClass: false
+    name: nfs-client
+    onDelete: null
+    pathPattern: null
+    reclaimPolicy: Delete
+    volumeBindingMode: Immediate
+  strategyType: Recreate
+  tolerations: []
+  
+  

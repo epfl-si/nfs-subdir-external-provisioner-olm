@@ -1,0 +1,6 @@
+# Use the 'create api' subcommand to add watches to this file.
+- group: nfs.epfl.ch
+  version: v1alpha1
+  kind: NfsSubdirProvisioner
+  chart: helm-charts/nfs-subdir-external-provisioner
+#+kubebuilder:scaffold:watch
