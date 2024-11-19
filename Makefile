@@ -197,9 +197,14 @@ ifneq ($(origin CATALOG_BASE_IMG), undefined)
 FROM_INDEX_OPT := --from-index $(CATALOG_BASE_IMG)
 endif
 
+CATALOG_IMAGES := $(BUNDLE_IMG)
+
 .PHONY: catalog-build
-catalog-build: opm  ## Build a catalog image.
-	:    # TODO: read more of the docs
+catalog-build: $(OPM)  ## Build a catalog image.
+	rm -rf catalog/; mkdir catalog/
+	for bundle in $(CATALOG_IMAGES); do \
+	 $(OPM) render $$bundle --output=yaml >> catalog/index.yaml; \
+	done
 
 # Push the catalog image.
 .PHONY: catalog-push
