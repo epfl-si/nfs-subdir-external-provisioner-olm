@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.0.1
+VERSION ?= 0.0.3
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -201,10 +201,15 @@ CATALOG_IMAGES := $(BUNDLE_IMG)
 
 .PHONY: catalog-build
 catalog-build: $(OPM)  ## Build a catalog image.
-	rm -rf catalog/; mkdir catalog/
+	rm -rf catalog/build/; mkdir catalog/build/
 	for bundle in $(CATALOG_IMAGES); do \
-	 $(OPM) render $$bundle --output=yaml >> catalog/index.yaml; \
+	 $(OPM) render $$bundle --output=yaml >> catalog/build/index.yaml; \
 	done
+	cat catalog/nfs-subdir-external-provisioner-olm.yaml >> catalog/build/index.yaml
+	$(OPM) validate catalog/build/
+	docker build . \
+		-f catalog.Dockerfile \
+		-t $(CATALOG_IMG)
 
 # Push the catalog image.
 .PHONY: catalog-push
