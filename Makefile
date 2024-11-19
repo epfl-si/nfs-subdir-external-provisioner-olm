@@ -201,7 +201,7 @@ CATALOG_IMAGES := $(BUNDLE_IMG)
 catalog-build: $(OPM)  ## Build a catalog image.
 	rm -rf catalog/build/; mkdir catalog/build/
 	for bundle in $(CATALOG_IMAGES); do \
-	 $(OPM) render $$bundle --output=yaml >> catalog/build/index.yaml; \
+	 $(OPM) render bundle --output=yaml >> catalog/build/index.yaml; \
 	done
 	cat catalog/nfs-subdir-ext-provisioner-olm.yaml >> catalog/build/index.yaml
 	$(OPM) validate catalog/build/
