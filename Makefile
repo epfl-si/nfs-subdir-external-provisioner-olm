@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.0.3
+VERSION ?= 0.0.5
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -28,7 +28,7 @@ BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 # This variable is used to construct full image tags for bundle and catalog images.
 #
 # For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
-# epfl.ch/nfs-subdir-external-provisioner-olm-bundle:$VERSION and epfl.ch/nfs-subdir-external-provisioner-olm-catalog:$VERSION.
+# epfl.ch/nfs-subdir-ext-provisioner-olm-bundle:$VERSION and epfl.ch/nfs-subdir-ext-provisioner-olm-catalog:$VERSION.
 IMAGE_TAG_BASE ?= quay-its.epfl.ch/svc0041/nfs-subdir-ext-provisioner-olm
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
@@ -205,7 +205,7 @@ catalog-build: $(OPM)  ## Build a catalog image.
 	for bundle in $(CATALOG_IMAGES); do \
 	 $(OPM) render $$bundle --output=yaml >> catalog/build/index.yaml; \
 	done
-	cat catalog/nfs-subdir-external-provisioner-olm.yaml >> catalog/build/index.yaml
+	cat catalog/nfs-subdir-ext-provisioner-olm.yaml >> catalog/build/index.yaml
 	$(OPM) validate catalog/build/
 	docker build . \
 		-f catalog.Dockerfile \

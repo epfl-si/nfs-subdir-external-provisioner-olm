@@ -1,12 +1,12 @@
 # Adds namespace to all resources.
-namespace: nfs-subdir-external-provisioner-olm-system
+namespace: nfs-subdir-ext-provisioner-olm-system
 
 # Value of this field is prepended to the
 # names of all resources, e.g. a deployment named
 # "wordpress" becomes "alices-wordpress".
 # Note that it should also match with the prefix (text before '-') of the namespace
 # field above.
-namePrefix: nfs-subdir-external-provisioner-olm-
+namePrefix: nfs-subdir-ext-provisioner-olm-
 
 # Labels to add to all resources and selectors.
 #labels:
@@ -26,5 +26,3 @@ patchesStrategicMerge:
 # If you want your controller-manager to expose the /metrics
 # endpoint w/o any authn/z, please comment the following line.
 - manager_auth_proxy_patch.yaml
-
-
