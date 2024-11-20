@@ -13,6 +13,4 @@ bin
 *.swo
 *~
 
-bundle
-bundle.Dockerfile
-catalog/build
+build

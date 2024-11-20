@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.0.9
+VERSION ?= 0.0.10
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -103,36 +103,40 @@ docker-buildx: test ## Build and push docker image for the manager for cross-pla
 ##@ Deployment
 
 .PHONY: install
-install: kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl apply -f -
+install: kustomize build/config ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+	$(KUSTOMIZE) build build/config/crd | kubectl apply -f -
 
 .PHONY: uninstall
-uninstall: kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl delete -f -
+uninstall: kustomize build/config ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
+	$(KUSTOMIZE) build build/config/crd | kubectl delete -f -
 
 .PHONY: deploy
-deploy: kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	cd config/manager && $(KUSTOMIZE) edit set image controller=${IMG}
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+deploy: kustomize build/config ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	$(KUSTOMIZE) build build/config/default | kubectl apply -f -
 
 .PHONY: undeploy
-undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/default | kubectl delete -f -
+undeploy: build/config ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
+	$(KUSTOMIZE) build build/config/default | kubectl delete -f -
 
 .PHONY: bundle-build
-bundle-build: kustomize build/PROJECT ## Generate bundle manifests and metadata, validate generated files
-	@rm -rf build/bundle || true
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build config/manifests | (cd build; operator-sdk generate bundle $(BUNDLE_GEN_FLAGS) --output-dir bundle)
-	operator-sdk bundle validate ./build/bundle
+bundle-build: ## Generate bundle manifests and metadata, validate generated files
+	@rm -rf build/bundle build/bundle.Dockerfile || true
+	$(MAKE) build/bundle
 	docker build -f build/bundle.Dockerfile -t $(BUNDLE_IMG) build/
 
 build:
 	@mkdir $@
-	cp -a config $@/
+
+build/config: build
+	cp -a config $@
+	cd build/config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 
 build/PROJECT: PROJECT build
 	cp $< $@
+
+build/bundle build/bundle.Dockerfile: build/PROJECT
+	$(KUSTOMIZE) build config/manifests | (cd build; operator-sdk generate bundle $(BUNDLE_GEN_FLAGS) --output-dir bundle)
+	operator-sdk bundle validate ./build/bundle
 
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
