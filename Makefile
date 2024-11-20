@@ -150,7 +150,7 @@ BUNDLE_IMGS ?= $(BUNDLE_IMG)
 CATALOG_IMG ?= quay-its.epfl.ch/svc0041/isas-fsd-catalog:v$(VERSION)
 
 .PHONY: catalog-build
-catalog-build: $(OPM)  ## Build a catalog image.
+catalog-build:  ## Build a catalog image.
 	rm -rf build/catalog/; mkdir -p build/catalog/
 	@set -e -x; for bundle in $(BUNDLE_IMGS); do \
 	 $(OPM) render $$bundle --output=yaml >> build/catalog/index.yaml; \
