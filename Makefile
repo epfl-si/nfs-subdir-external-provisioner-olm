@@ -122,7 +122,6 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 .PHONY: bundle-build
 bundle-build: kustomize build/PROJECT ## Generate bundle manifests and metadata, validate generated files
 	@rm -rf build/bundle || true
-	operator-sdk generate kustomize manifests --verbose --output-dir build/config
 	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 	$(KUSTOMIZE) build config/manifests | (cd build; operator-sdk generate bundle $(BUNDLE_GEN_FLAGS) --output-dir bundle)
 	operator-sdk bundle validate ./build/bundle
