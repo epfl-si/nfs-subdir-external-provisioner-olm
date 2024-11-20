@@ -227,3 +227,11 @@ else
 OPM = $(shell which opm)
 endif
 endif
+
+
+##@ Cleanup
+
+.PHONY: clean
+clean: ## Remove intermediate files and built Docker images
+	rm -rf build
+	docker rmi $(IMG) $(BUNDLE_IMG) $(CATALOG_IMG) || true
