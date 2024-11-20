@@ -149,11 +149,6 @@ BUNDLE_IMGS ?= $(BUNDLE_IMG)
 # The image tag given to the resulting catalog image (e.g. make catalog-build CATALOG_IMG=example.com/operator-catalog:v0.2.0).
 CATALOG_IMG ?= quay-its.epfl.ch/svc0041/isas-fsd-catalog:v$(VERSION)
 
-# Set CATALOG_BASE_IMG to an existing catalog image tag to add $BUNDLE_IMGS to that image.
-ifneq ($(origin CATALOG_BASE_IMG), undefined)
-FROM_INDEX_OPT := --from-index $(CATALOG_BASE_IMG)
-endif
-
 .PHONY: catalog-build
 catalog-build: $(OPM)  ## Build a catalog image.
 	rm -rf build/catalog/; mkdir -p build/catalog/
