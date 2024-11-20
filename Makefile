@@ -200,8 +200,8 @@ CATALOG_IMAGES := $(BUNDLE_IMG)
 .PHONY: catalog-build
 catalog-build: $(OPM)  ## Build a catalog image.
 	rm -rf catalog/build/; mkdir catalog/build/
-	for bundle in $(CATALOG_IMAGES); do \
-	 $(OPM) render bundle --output=yaml >> catalog/build/index.yaml; \
+	@set -e -x; for bundle in $(CATALOG_IMAGES); do \
+	 $(OPM) render $$bundle --output=yaml >> catalog/build/index.yaml; \
 	done
 	sed 's/@@VERSION@@/$(VERSION)/g' < catalog/nfs-subdir-ext-provisioner-olm.yaml >> catalog/build/index.yaml
 	$(OPM) validate catalog/build/
