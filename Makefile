@@ -119,6 +119,61 @@ deploy: kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/c
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
 	$(KUSTOMIZE) build config/default | kubectl delete -f -
 
+.PHONY: bundle-build
+bundle-build: kustomize build/PROJECT ## Generate bundle manifests and metadata, validate generated files
+	@rm -rf build/bundle || true
+	operator-sdk generate kustomize manifests --verbose --output-dir build/config
+	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
+	$(KUSTOMIZE) build config/manifests | (cd build; operator-sdk generate bundle $(BUNDLE_GEN_FLAGS) --output-dir bundle)
+	operator-sdk bundle validate ./build/bundle
+	docker build -f build/bundle.Dockerfile -t $(BUNDLE_IMG) build/
+
+build:
+	@mkdir $@
+	cp -a config $@/
+
+build/PROJECT: PROJECT build
+	cp $< $@
+
+.PHONY: bundle-push
+bundle-push: ## Push the bundle image.
+	$(MAKE) docker-push IMG=$(BUNDLE_IMG)
+
+# A comma-separated list of bundle images (e.g. make catalog-build BUNDLE_IMGS=example.com/operator-bundle:v0.1.0,example.com/operator-bundle:v0.2.0).
+# These images MUST exist in a registry and be pull-able.
+BUNDLE_IMGS ?= $(BUNDLE_IMG)
+
+# The image tag given to the resulting catalog image (e.g. make catalog-build CATALOG_IMG=example.com/operator-catalog:v0.2.0).
+CATALOG_IMG ?= quay-its.epfl.ch/svc0041/isas-fsd-catalog:v$(VERSION)
+
+# Set CATALOG_BASE_IMG to an existing catalog image tag to add $BUNDLE_IMGS to that image.
+ifneq ($(origin CATALOG_BASE_IMG), undefined)
+FROM_INDEX_OPT := --from-index $(CATALOG_BASE_IMG)
+endif
+
+CATALOG_IMAGES := $(BUNDLE_IMG)
+
+.PHONY: catalog-build
+catalog-build: $(OPM)  ## Build a catalog image.
+	rm -rf build/catalog/; mkdir -p build/catalog/
+	@set -e -x; for bundle in $(CATALOG_IMAGES); do \
+	 $(OPM) render $$bundle --output=yaml >> build/catalog/index.yaml; \
+	done
+	sed 's/@@VERSION@@/$(VERSION)/g' < catalog/nfs-subdir-ext-provisioner-olm.yaml >> build/catalog/index.yaml
+	$(OPM) validate build/catalog/
+	docker build . \
+		-f catalog.Dockerfile \
+		-t $(CATALOG_IMG)
+
+# Push the catalog image.
+.PHONY: catalog-push
+catalog-push: ## Push a catalog image.
+	$(MAKE) docker-push IMG=$(CATALOG_IMG)
+
+
+#############################################################################
+##@ Downloading binaries
+
 OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 ARCH := $(shell uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')
 
@@ -154,19 +209,6 @@ HELM_OPERATOR = $(shell which helm-operator)
 endif
 endif
 
-.PHONY: bundle-build
-bundle-build: kustomize ## Generate bundle manifests and metadata, validate generated files
-	@-rm -rf bundle bundle.Dockerfile
-	operator-sdk generate kustomize manifests -q
-	cd config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-	$(KUSTOMIZE) build config/manifests | operator-sdk generate bundle $(BUNDLE_GEN_FLAGS)
-	operator-sdk bundle validate ./bundle
-	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
-
-.PHONY: bundle-push
-bundle-push: ## Push the bundle image.
-	$(MAKE) docker-push IMG=$(BUNDLE_IMG)
-
 .PHONY: opm
 OPM = ./bin/opm
 opm: ## Download opm locally if necessary.
@@ -182,34 +224,3 @@ else
 OPM = $(shell which opm)
 endif
 endif
-
-# A comma-separated list of bundle images (e.g. make catalog-build BUNDLE_IMGS=example.com/operator-bundle:v0.1.0,example.com/operator-bundle:v0.2.0).
-# These images MUST exist in a registry and be pull-able.
-BUNDLE_IMGS ?= $(BUNDLE_IMG)
-
-# The image tag given to the resulting catalog image (e.g. make catalog-build CATALOG_IMG=example.com/operator-catalog:v0.2.0).
-CATALOG_IMG ?= quay-its.epfl.ch/svc0041/isas-fsd-catalog:v$(VERSION)
-
-# Set CATALOG_BASE_IMG to an existing catalog image tag to add $BUNDLE_IMGS to that image.
-ifneq ($(origin CATALOG_BASE_IMG), undefined)
-FROM_INDEX_OPT := --from-index $(CATALOG_BASE_IMG)
-endif
-
-CATALOG_IMAGES := $(BUNDLE_IMG)
-
-.PHONY: catalog-build
-catalog-build: $(OPM)  ## Build a catalog image.
-	rm -rf catalog/build/; mkdir catalog/build/
-	@set -e -x; for bundle in $(CATALOG_IMAGES); do \
-	 $(OPM) render $$bundle --output=yaml >> catalog/build/index.yaml; \
-	done
-	sed 's/@@VERSION@@/$(VERSION)/g' < catalog/nfs-subdir-ext-provisioner-olm.yaml >> catalog/build/index.yaml
-	$(OPM) validate catalog/build/
-	docker build . \
-		-f catalog.Dockerfile \
-		-t $(CATALOG_IMG)
-
-# Push the catalog image.
-.PHONY: catalog-push
-catalog-push: ## Push a catalog image.
-	$(MAKE) docker-push IMG=$(CATALOG_IMG)
