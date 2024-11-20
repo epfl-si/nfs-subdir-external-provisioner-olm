@@ -154,12 +154,10 @@ ifneq ($(origin CATALOG_BASE_IMG), undefined)
 FROM_INDEX_OPT := --from-index $(CATALOG_BASE_IMG)
 endif
 
-CATALOG_IMAGES := $(BUNDLE_IMG)
-
 .PHONY: catalog-build
 catalog-build: $(OPM)  ## Build a catalog image.
 	rm -rf build/catalog/; mkdir -p build/catalog/
-	@set -e -x; for bundle in $(CATALOG_IMAGES); do \
+	@set -e -x; for bundle in $(BUNDLE_IMGS); do \
 	 $(OPM) render $$bundle --output=yaml >> build/catalog/index.yaml; \
 	done
 	sed 's/@@VERSION@@/$(VERSION)/g' < catalog/nfs-subdir-ext-provisioner-olm.yaml >> build/catalog/index.yaml
