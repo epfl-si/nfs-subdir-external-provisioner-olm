@@ -145,8 +145,7 @@ build/bundle: \
     build/bundle/manifests/nfs-subdir-ext-provisioner-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml \
     build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml \
     build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml \
-    build/bundle/metadata/annotations.yaml \
-    build/bundle/tests/scorecard/config.yaml
+    build/bundle/metadata/annotations.yaml
 	operator-sdk bundle validate $@
 
 build/bundle/manifests/nfs-subdir-ext-provisioner-olm-controller-manager-metrics-service_v1_service.yaml: build/bundle-generated
@@ -169,11 +168,6 @@ build/bundle/metadata/annotations.yaml: bundle.Dockerfile
 	install -d $(dir $@)
 	( echo "annotations:" ; \
 	  sed -ne 's/^LABEL \(.*\)=\(.*\)$$/  \1: \2/p' < $< ) > $@
-
-# TODO: pick up directly from source code.
-build/bundle/tests/scorecard/config.yaml: build/bundle-generated
-	install -d $(dir $@)
-	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
 
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
