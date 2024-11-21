@@ -165,10 +165,10 @@ build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml: build/bundle-gene
 	install -d $(dir $@)
 	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
 
-# TODO: derive from `bundle.Dockerfile` with `sed` instead.
-build/bundle/metadata/annotations.yaml: build/bundle-generated
+build/bundle/metadata/annotations.yaml: bundle.Dockerfile
 	install -d $(dir $@)
-	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < $(patsubst build/bundle/%, build/bundle-generated/%, $@) > $@
+	( echo "annotations:" ; \
+	  sed -ne 's/^LABEL \(.*\)=\(.*\)$$/  \1: \2/p' < $< ) > $@
 
 # TODO: pick up directly from source code.
 build/bundle/tests/scorecard/config.yaml: build/bundle-generated
