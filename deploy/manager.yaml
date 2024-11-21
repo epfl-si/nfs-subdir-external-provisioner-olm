@@ -1,3 +1,18 @@
+# Namespace and deployment for the OLM controller manager.
+#
+# Simply put, this runs your “operator's operator” pod, if you
+# consider OLM as being an “operator's operator's operator“.
+#
+# This file can (almost) be used stand-alone (if you uncomment and
+# edit the `image:` field; or alternatively, if you let the `sed`
+# business in `make deploy` take care of that for you). This file is
+# also fed into the bundling pipeline, so that the Deployment object
+# below becomes part of the operator manifests as described in
+# https://olm.operatorframework.io/docs/tasks/creating-operator-manifests/
+# (On the other hand, the Namespace is eliminated at `operator-sdk
+# generate bundle` time, because OLM prefers to manage the namespace
+# as it pleases.)
+
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -9,13 +24,15 @@ metadata:
     app.kubernetes.io/created-by: nfs-subdir-ext-provisioner-olm
     app.kubernetes.io/part-of: nfs-subdir-ext-provisioner-olm
     app.kubernetes.io/managed-by: kustomize
-  name: system
+  name: nfs-subdir-ext-provisioner-olm-system
 ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: controller-manager
-  namespace: system
+  # The name and namespace must match the ones that `operator-sdk
+  # generate bundle` expects, lest it ignore the Deployment entirely.
+  name: nfs-subdir-ext-provisioner-olm-controller-manager
+  namespace: nfs-subdir-ext-provisioner-olm-system
   labels:
     control-plane: controller-manager
     app.kubernetes.io/name: deployment
@@ -23,7 +40,6 @@ metadata:
     app.kubernetes.io/component: manager
     app.kubernetes.io/created-by: nfs-subdir-ext-provisioner-olm
     app.kubernetes.io/part-of: nfs-subdir-ext-provisioner-olm
-    app.kubernetes.io/managed-by: kustomize
 spec:
   selector:
     matchLabels:
@@ -58,6 +74,12 @@ spec:
       #               - linux
       securityContext:
         runAsNonRoot: true
+      # As the bundled ClusterServiceVersion contains a “preview” of
+      # the controller's RBAC (under `spec.install.spec.permissions`
+      # and `spec.install.spec.clusterPermissions`), the
+      # serviceAccountName below must match the one referenced by the
+      # RBAC objects living under ../config/rbac/
+      serviceAccountName: nfs-subdir-ext-provisioner-olm-controller-manager
         # TODO(user): For common cases that do not require escalating privileges
         # it is recommended to ensure that all your Pods/Containers are restrictive.
         # More info: https://kubernetes.io/docs/concepts/security/pod-security-standards/#restricted
@@ -69,7 +91,7 @@ spec:
       - args:
         - --leader-elect
         - --leader-election-id=nfs-subdir-ext-provisioner-olm
-        image: controller:latest
+#        image: controller:latest
         name: manager
         securityContext:
           allowPrivilegeEscalation: false
@@ -97,5 +119,4 @@ spec:
           requests:
             cpu: 10m
             memory: 64Mi
-      serviceAccountName: controller-manager
       terminationGracePeriodSeconds: 10

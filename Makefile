@@ -111,12 +111,15 @@ uninstall: kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube
 	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
 .PHONY: deploy
-deploy: kustomize build/config ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build build/config/default | kubectl apply -f -
+deploy: kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	$(KUSTOMIZE) build config/default | kubectl apply -f -
+	$(_subst_manager_image) < deploy/manager.yaml | \
+	  kubectl apply -f -
 
 .PHONY: undeploy
-undeploy: build/config ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build build/config/default | kubectl delete -f -
+undeploy: kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
+	$(KUSTOMIZE) build config/default | kubectl delete -f -
+	kubectl delete -f deploy/manager.yaml
 
 .PHONY: bundle-build
 bundle-build: build/bundle ## Generate bundle manifests and metadata, validate generated files
@@ -125,13 +128,13 @@ bundle-build: build/bundle ## Generate bundle manifests and metadata, validate g
 build:
 	@mkdir $@
 
-build/config: build
-	cp -a config $@
-	cd build/config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
-
-build/bundle-manifests.yaml: build
+build/bundle-manifests.yaml: build deploy/manager.yaml
+	$(_subst_manager_image) deploy/manager.yaml > $@
+	echo "---" >> $@
 # TODO: disintermediate kustomize, here at the very least.
-	$(KUSTOMIZE) build config/manifests > $@
+	$(KUSTOMIZE) build config/manifests >> $@
+
+_subst_manager_image := sed -e 's|^\#\( *image: \)controller:latest|\1 $(IMG)|'
 
 build/bundle-generated: build/bundle-manifests.yaml
 	@rm -rf $@; mkdir -p $@
