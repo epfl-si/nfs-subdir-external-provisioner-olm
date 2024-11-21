@@ -131,8 +131,11 @@ build/config: build
 	cp -a config $@
 	cd build/config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 
-build/bundle build/bundle.Dockerfile: build
-	$(KUSTOMIZE) build config/manifests | (cd build; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir bundle)
+build/bundle-manifests.yaml: build
+	$(KUSTOMIZE) build config/manifests > $@
+
+build/bundle build/bundle.Dockerfile: build/bundle-manifests.yaml
+	cat $< | (cd build; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir bundle)
 	@grep -rl 'project_layout: unknown' $@ | \
 	  xargs sed -i.bak 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|'
 	sed -i.bak 's|project_layout=unknown|project_layout=helm.sdk.operatorframework.io/v1|' build/bundle.Dockerfile
