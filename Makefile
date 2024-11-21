@@ -120,7 +120,7 @@ undeploy: build/config ## Undeploy controller from the K8s cluster specified in 
 
 .PHONY: bundle-build
 bundle-build: build/bundle ## Generate bundle manifests and metadata, validate generated files
-	docker build -f build/bundle.Dockerfile -t $(BUNDLE_IMG) build/
+	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 build:
 	@mkdir $@
@@ -133,7 +133,7 @@ build/bundle-manifests.yaml: build
 # TODO: disintermediate kustomize, here at the very least.
 	$(KUSTOMIZE) build config/manifests > $@
 
-build/bundle-generated build/bundle.Dockerfile: build/bundle-manifests.yaml
+build/bundle-generated: build/bundle-manifests.yaml
 	@rm -rf $@; mkdir -p $@
 	cat $< | (cd $(dir $@); operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir $(notdir $@))
 	sed -i.bak 's|project_layout=unknown|project_layout=helm.sdk.operatorframework.io/v1|' build/bundle.Dockerfile
@@ -165,7 +165,7 @@ build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml: build/bundle-gene
 	install -d $(dir $@)
 	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
 
-# TODO: derive from (committed to source control) `bundle.Dockerfile` with `sed` instead.
+# TODO: derive from `bundle.Dockerfile` with `sed` instead.
 build/bundle/metadata/annotations.yaml: build/bundle-generated
 	install -d $(dir $@)
 	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < $(patsubst build/bundle/%, build/bundle-generated/%, $@) > $@
