@@ -36,7 +36,7 @@ IMAGE_TAG_BASE ?= quay-its.epfl.ch/svc0041/nfs-subdir-ext-provisioner-olm
 BUNDLE_IMG ?= $(IMAGE_TAG_BASE)-bundle:v$(VERSION)
 
 # BUNDLE_GEN_FLAGS are the flags passed to the operator-sdk generate bundle command
-BUNDLE_GEN_FLAGS ?= -q --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
+BUNDLE_GEN_FLAGS ?= --overwrite --version $(VERSION) $(BUNDLE_METADATA_OPTS)
 
 # USE_IMAGE_DIGESTS defines if images are resolved via tags or digests
 # You can enable this value if you would like to use SHA Based Digests
@@ -132,7 +132,7 @@ build/config: build
 	cd build/config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 
 build/bundle build/bundle.Dockerfile: build
-	$(KUSTOMIZE) build config/manifests | (cd build; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --output-dir bundle)
+	$(KUSTOMIZE) build config/manifests | (cd build; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir bundle)
 	@grep -rl 'project_layout: unknown' $@ | \
 	  xargs sed -i.bak 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|'
 	sed -i.bak 's|project_layout=unknown|project_layout=helm.sdk.operatorframework.io/v1|' build/bundle.Dockerfile
