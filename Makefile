@@ -119,9 +119,7 @@ undeploy: build/config ## Undeploy controller from the K8s cluster specified in 
 	$(KUSTOMIZE) build build/config/default | kubectl delete -f -
 
 .PHONY: bundle-build
-bundle-build: ## Generate bundle manifests and metadata, validate generated files
-	@rm -rf build/bundle build/bundle.Dockerfile || true
-	$(MAKE) build/bundle
+bundle-build: build/bundle ## Generate bundle manifests and metadata, validate generated files
 	docker build -f build/bundle.Dockerfile -t $(BUNDLE_IMG) build/
 
 build:
@@ -132,15 +130,50 @@ build/config: build
 	cd build/config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 
 build/bundle-manifests.yaml: build
+# TODO: disintermediate kustomize, here at the very least.
 	$(KUSTOMIZE) build config/manifests > $@
 
-build/bundle build/bundle.Dockerfile: build/bundle-manifests.yaml
-	cat $< | (cd build; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir bundle)
-	@grep -rl 'project_layout: unknown' $@ | \
-	  xargs sed -i.bak 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|'
+build/bundle-generated build/bundle.Dockerfile: build/bundle-manifests.yaml
+	@rm -rf $@; mkdir -p $@
+	cat $< | (cd $(dir $@); operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir $(notdir $@))
 	sed -i.bak 's|project_layout=unknown|project_layout=helm.sdk.operatorframework.io/v1|' build/bundle.Dockerfile
-	@find $@ -name "*.bak" | xargs rm
-	operator-sdk bundle validate ./build/bundle
+	sed -i.bak 's|COPY bundle-generated|COPY bundle|' build/bundle.Dockerfile
+	rm build/*Dockerfile*bak
+
+build/bundle: \
+    build/bundle/manifests/nfs-subdir-ext-provisioner-olm-controller-manager-metrics-service_v1_service.yaml \
+    build/bundle/manifests/nfs-subdir-ext-provisioner-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml \
+    build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml \
+    build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml \
+    build/bundle/metadata/annotations.yaml \
+    build/bundle/tests/scorecard/config.yaml
+	operator-sdk bundle validate $@
+
+build/bundle/manifests/nfs-subdir-ext-provisioner-olm-controller-manager-metrics-service_v1_service.yaml: build/bundle-generated
+	install -d $(dir $@)
+	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
+
+build/bundle/manifests/nfs-subdir-ext-provisioner-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml: build/bundle-generated
+	install -d $(dir $@)
+	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
+
+build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: build/bundle-generated
+	install -d $(dir $@)
+	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < $(patsubst build/bundle/%, build/bundle-generated/%, $@) > $@
+
+build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml: build/bundle-generated
+	install -d $(dir $@)
+	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
+
+# TODO: derive from (committed to source control) `bundle.Dockerfile` with `sed` instead.
+build/bundle/metadata/annotations.yaml: build/bundle-generated
+	install -d $(dir $@)
+	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < $(patsubst build/bundle/%, build/bundle-generated/%, $@) > $@
+
+# TODO: pick up directly from source code.
+build/bundle/tests/scorecard/config.yaml: build/bundle-generated
+	install -d $(dir $@)
+	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
 
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
