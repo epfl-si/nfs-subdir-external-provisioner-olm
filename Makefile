@@ -131,11 +131,12 @@ build/config: build
 	cp -a config $@
 	cd build/config/manager && $(KUSTOMIZE) edit set image controller=$(IMG)
 
-build/PROJECT: PROJECT build
-	cp $< $@
-
-build/bundle build/bundle.Dockerfile: build/PROJECT
-	$(KUSTOMIZE) build config/manifests | (cd build; operator-sdk generate bundle $(BUNDLE_GEN_FLAGS) --output-dir bundle)
+build/bundle build/bundle.Dockerfile: build
+	$(KUSTOMIZE) build config/manifests | (cd build; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --output-dir bundle)
+	@grep -rl 'project_layout: unknown' $@ | \
+	  xargs sed -i.bak 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|'
+	sed -i.bak 's|project_layout=unknown|project_layout=helm.sdk.operatorframework.io/v1|' build/bundle.Dockerfile
+	@find $@ -name "*.bak" | xargs rm
 	operator-sdk bundle validate ./build/bundle
 
 .PHONY: bundle-push
