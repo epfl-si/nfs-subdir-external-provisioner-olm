@@ -103,12 +103,12 @@ docker-buildx: test ## Build and push docker image for the manager for cross-pla
 ##@ Deployment
 
 .PHONY: install
-install: kustomize build/config ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build build/config/crd | kubectl apply -f -
+install: kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+	$(KUSTOMIZE) build config/crd | kubectl apply -f -
 
 .PHONY: uninstall
-uninstall: kustomize build/config ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build build/config/crd | kubectl delete -f -
+uninstall: kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
+	$(KUSTOMIZE) build config/crd | kubectl delete -f -
 
 .PHONY: deploy
 deploy: kustomize build/config ## Deploy controller to the K8s cluster specified in ~/.kube/config.
