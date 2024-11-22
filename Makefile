@@ -144,18 +144,18 @@ build/bundle-generated: build/bundle-manifests.yaml
 	rm build/*Dockerfile*bak
 
 build/bundle: \
-    build/bundle/manifests/nfs-subdir-ext-provisioner-olm-controller-manager-metrics-service_v1_service.yaml \
-    build/bundle/manifests/nfs-subdir-ext-provisioner-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml \
+    build/bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml \
+    build/bundle/manifests/nfs-ext-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml \
     build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml \
     build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml \
     build/bundle/metadata/annotations.yaml
 	operator-sdk bundle validate $@
 
-build/bundle/manifests/nfs-subdir-ext-provisioner-olm-controller-manager-metrics-service_v1_service.yaml: build/bundle-generated
+build/bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml: build/bundle-generated
 	install -d $(dir $@)
 	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
 
-build/bundle/manifests/nfs-subdir-ext-provisioner-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml: build/bundle-generated
+build/bundle/manifests/nfs-ext-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml: build/bundle-generated
 	install -d $(dir $@)
 	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
 
