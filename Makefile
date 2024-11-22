@@ -182,6 +182,7 @@ BUNDLE_IMGS ?= $(BUNDLE_IMG)
 
 # The image tag given to the resulting catalog image (e.g. make catalog-build CATALOG_IMG=example.com/operator-catalog:v0.2.0).
 CATALOG_IMG ?= quay-its.epfl.ch/svc0041/isas-fsd-catalog:v$(VERSION)
+_catalog_img_latest = $(shell echo "$(CATALOG_IMG)" | sed 's/:.*$$/:latest/')
 
 .PHONY: catalog-build
 catalog-build:  ## Build a catalog image.
@@ -199,6 +200,8 @@ catalog-build:  ## Build a catalog image.
 .PHONY: catalog-push
 catalog-push: ## Push a catalog image.
 	docker push $(CATALOG_IMG)
+	docker tag $(CATALOG_IMG) $(_catalog_img_latest)
+	docker push $(_catalog_img_latest)
 
 
 #############################################################################
