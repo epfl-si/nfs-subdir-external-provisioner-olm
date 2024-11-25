@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.0.13
+VERSION ?= 0.0.15
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -43,9 +43,9 @@ ifeq ($(USE_IMAGE_DIGESTS), true)
 endif
 
 # Image URL to use all building/pushing image targets
-IMG ?= $(IMAGE_TAG_BASE)
+IMG ?= $(IMAGE_TAG_BASE):v$(VERSION)
 
-CONTROLLER_IMG ?= $(shell echo $(IMAGE_TAG_BASE):v$(VERSION) \
+CONTROLLER_IMG ?= $(shell echo $(IMG) \
   | sed 's|quay-its.epfl.ch|anonymous.apps.t-ocp-its-01.xaas.epfl.ch|')
 
 .PHONY: all
