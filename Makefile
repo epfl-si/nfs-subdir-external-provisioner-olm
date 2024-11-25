@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.0.10
+VERSION ?= 0.0.12
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -44,6 +44,9 @@ endif
 
 # Image URL to use all building/pushing image targets
 IMG ?= $(IMAGE_TAG_BASE)
+
+ANONYMOUS_MIRRORED_IMG ?= $(shell echo $(IMAGE_TAG_BASE)-bundle:v$(VERSION) \
+  | sed 's|quay-its.epfl.ch|anonymous.apps.t-ocp-its-01.xaas.epfl.ch|')
 
 .PHONY: all
 all: docker-build
@@ -130,7 +133,7 @@ build/bundle-manifests.yaml: build deploy/manager.yaml
 # TODO: disintermediate kustomize, here at the very least.
 	$(KUSTOMIZE) build config/manifests >> $@
 
-_subst_manager_image := sed -e 's|^\#\( *image: \)controller:latest|\1 $(IMG)|'
+_subst_manager_image := sed -e 's|^\#\( *image: \)controller:latest|\1 $(ANONYMOUS_MIRRORED_IMG)|'
 
 build/bundle-generated: build/bundle-manifests.yaml
 	@rm -rf $@; mkdir -p $@
