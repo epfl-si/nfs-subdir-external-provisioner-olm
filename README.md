@@ -2,5 +2,5 @@
 
 Build:
 ```sh
-make bundle bundle-build bundle-push catalog-build catalog-push
+make bundle bundle-build bundle-push
 ```

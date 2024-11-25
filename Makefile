@@ -25,10 +25,6 @@ endif
 BUNDLE_METADATA_OPTS ?= $(BUNDLE_CHANNELS) $(BUNDLE_DEFAULT_CHANNEL)
 
 # IMAGE_TAG_BASE defines the docker.io namespace and part of the image name for remote images.
-# This variable is used to construct full image tags for bundle and catalog images.
-#
-# For example, running 'make bundle-build bundle-push catalog-build catalog-push' will build and push both
-# epfl.ch/nfs-subdir-ext-provisioner-olm-bundle:$VERSION and epfl.ch/nfs-subdir-ext-provisioner-olm-catalog:$VERSION.
 IMAGE_TAG_BASE ?= quay-its.epfl.ch/svc0041/nfs-subdir-ext-provisioner-olm
 
 # BUNDLE_IMG defines the image:tag used for the bundle.
@@ -176,33 +172,6 @@ build/bundle/metadata/annotations.yaml: bundle.Dockerfile
 bundle-push: ## Push the bundle image.
 	docker push $(BUNDLE_IMG)
 
-# A comma-separated list of bundle images (e.g. make catalog-build BUNDLE_IMGS=example.com/operator-bundle:v0.1.0,example.com/operator-bundle:v0.2.0).
-# These images MUST exist in a registry and be pull-able.
-BUNDLE_IMGS ?= $(BUNDLE_IMG)
-
-# The image tag given to the resulting catalog image (e.g. make catalog-build CATALOG_IMG=example.com/operator-catalog:v0.2.0).
-CATALOG_IMG ?= quay-its.epfl.ch/svc0041/isas-fsd-catalog:v$(VERSION)
-_catalog_img_latest = $(shell echo "$(CATALOG_IMG)" | sed 's/:.*$$/:latest/')
-
-.PHONY: catalog-build
-catalog-build:  ## Build a catalog image.
-	rm -rf build/catalog/; mkdir -p build/catalog/
-	@set -e -x; for bundle in $(BUNDLE_IMGS); do \
-	 $(OPM) render $$bundle --output=yaml >> build/catalog/index.yaml; \
-	done
-	sed 's/@@VERSION@@/$(VERSION)/g' < catalog/nfs-subdir-ext-provisioner-olm.yaml >> build/catalog/index.yaml
-	$(OPM) validate build/catalog/
-	docker build . \
-		-f catalog.Dockerfile \
-		-t $(CATALOG_IMG)
-
-# Push the catalog image.
-.PHONY: catalog-push
-catalog-push: ## Push a catalog image.
-	docker push $(CATALOG_IMG)
-	docker tag $(CATALOG_IMG) $(_catalog_img_latest)
-	docker push $(_catalog_img_latest)
-
 
 #############################################################################
 ##@ Downloading binaries
@@ -264,4 +233,4 @@ endif
 .PHONY: clean
 clean: ## Remove intermediate files and built Docker images
 	rm -rf build
-	docker rmi $(IMG) $(BUNDLE_IMG) $(CATALOG_IMG) || true
+	docker rmi $(IMG) $(BUNDLE_IMG) || true
