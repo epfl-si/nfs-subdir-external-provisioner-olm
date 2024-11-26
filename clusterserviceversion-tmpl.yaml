@@ -215,7 +215,7 @@ spec:
   - operator
   links:
   - name: Nfs Subdir External Provisioner Olm
-    url: https://nfs-subdir-external-provisioner-olm.domain
+    url: https://nfs-subdir-external-provisioner-olm.example.domain
   maintainers:
   - email: isas-fsd@groupes.epfl.ch
     name: ISAS-FSD

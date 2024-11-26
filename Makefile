@@ -152,7 +152,7 @@ build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion
   nfssubdirprovisioner_crd.yaml \
   $(wildcard config/rbac/*.yaml) \
   nfssubdirprovisioner_example.yaml \
-  config/manifests/bases/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml
+  clusterserviceversion-tmpl.yaml
 	@rm -rf build/csv-tmp
 	( for src in $^; do \
 	    cat $$src | case "$$src" in \
