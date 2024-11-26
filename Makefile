@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.0.22
+VERSION ?= 0.0.24
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -147,8 +147,6 @@ bundle-push: ## Push the bundle image.
 	docker push $(BUNDLE_IMG)
 
 bundle: \
-    bundle/manifests/auth_proxy_client_clusterrole.yaml \
-    bundle/manifests/auth_proxy_service.yaml \
     bundle/manifests/clusterserviceversion.yaml \
     bundle/manifests/nfssubdirprovisioner_crd.yaml \
     bundle/metadata/annotations.yaml
@@ -183,10 +181,6 @@ bundle/manifests/clusterserviceversion.yaml: \
 	rm -rf bundle/csv-tmp
 
 bundle/manifests/nfssubdirprovisioner_crd.yaml: nfssubdirprovisioner_crd.yaml
-	install -d $(dir $@)
-	cp $< $@
-
-bundle/manifests/%.yaml: rbac/%.yaml
 	install -d $(dir $@)
 	cp $< $@
 
