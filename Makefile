@@ -137,11 +137,12 @@ _subst_manager_image := sed -e 's|^\#\( *image: \)controller:latest|\1 $(CONTROL
 
 build/bundle-generated: build/bundle-manifests.yaml
 	@rm -rf $@; mkdir -p $@
+# TODO: we don't really need to go through `operator-sdk generate bundle` for the remainder of these files.
+# Pull them directly out of source code instead.
 	cat $< | (cd $(dir $@); operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir $(notdir $@))
-	sed -i .bak 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' \
-	    build/bundle-generated/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml
-
 	rm build/*Dockerfile
+	rm -rf build/bundle-generated/metadata
+	rm build/bundle-generated/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml   # We don't use that one; see next target
 
 build/bundle: \
     build/bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml \
@@ -159,9 +160,11 @@ build/bundle/manifests/nfs-ext-olm-metrics-reader_rbac.authorization.k8s.io_v1_c
 	install -d $(dir $@)
 	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
 
-build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: build/bundle-generated
-	install -d $(dir $@)
-	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
+build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: build/bundle-manifests.yaml
+	@rm -rf build/csv-tmp
+	cat $< | (cd build; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir csv-tmp)
+	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < build/csv-tmp/manifests/$(notdir $@) > $@
+	rm -rf build/csv-tmp
 
 build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml: build/bundle-generated
 	install -d $(dir $@)
