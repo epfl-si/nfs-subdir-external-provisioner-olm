@@ -145,9 +145,24 @@ build/bundle: \
     build/bundle/metadata/annotations.yaml
 	operator-sdk bundle validate $@
 
-build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: build/bundle-manifests.yaml
+build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: \
+  deploy/manager.yaml \
+  nfssubdirprovisioner_crd.yaml \
+  $(wildcard config/rbac/*.yaml) \
+  config/samples/nfs_v1alpha1_nfssubdirprovisioner.yaml \
+  config/manifests/bases/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml
 	@rm -rf build/csv-tmp
-	cat $< | (cd build; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir csv-tmp)
+	( for src in $^; do \
+	    cat $$src | case "$$src" in \
+	      config/rbac/*) sed 's|^  name: |  name: nfs-ext-olm-|' | \
+	                     sed 's|^  namespace: .*|  namespace: nfs-ext-olm-system|' ;; \
+	      deploy/manager.yaml) $(_subst_manager_image) ;; \
+	      *) cat ;; \
+	    esac ; \
+	    echo; echo "---"; \
+	  done ) | \
+	  tee build/debug-csv-tmp.yaml | \
+	  (cd build; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir csv-tmp)
 	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < build/csv-tmp/manifests/$(notdir $@) > $@
 	rm -rf build/csv-tmp
 
