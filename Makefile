@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.0.18
+VERSION ?= 0.0.19
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -151,7 +151,6 @@ build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion
 	    esac ; \
 	    echo; echo "---"; \
 	  done ) | \
-	  tee build/debug-csv-tmp.yaml | \
 	  (cd build; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir csv-tmp)
 	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < build/csv-tmp/manifests/$(notdir $@) > $@
 	rm -rf build/csv-tmp
