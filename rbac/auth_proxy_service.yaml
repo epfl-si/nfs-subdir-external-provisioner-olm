@@ -9,7 +9,6 @@ metadata:
     app.kubernetes.io/created-by: nfs-subdir-ext-provisioner-olm
     app.kubernetes.io/part-of: nfs-subdir-ext-provisioner-olm
   name: nfs-ext-olm-controller-manager-metrics-service
-  namespace: nfs-subdir-ext-provisioner-olm-system
 spec:
   ports:
   - name: https

@@ -127,18 +127,6 @@ bundle-build: build/bundle ## Generate bundle manifests and metadata, validate g
 build:
 	@mkdir $@
 
-build/bundle-manifests.yaml: build deploy/manager.yaml
-	$(_subst_manager_image) deploy/manager.yaml > $@
-	echo "---" >> $@
-	cat nfssubdirprovisioner_crd.yaml >> $@
-	echo "---" >> $@
-	cat nfssubdirprovisioner_example.yaml >> $@
-	echo "---" >> $@
-	set -e -x; for rbac in rbac/* ; do \
-	  cat $$rbac ; \
-	  echo "---" ; \
-	done >> $@
-
 _subst_manager_image := sed -e 's|^\#\( *image: \)controller:latest|\1 $(CONTROLLER_IMG)|'
 
 build/bundle: \
@@ -172,23 +160,13 @@ build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml: nfssubdirprovisio
 	install -d $(dir $@)
 	cp $< $@
 
-# TODO: we don't really need to go through `operator-sdk generate bundle` for the last two
-# build/bundle/manifests/ targets below.
-# Pull them directly out of source code instead, like we did for the other targets above.
-build/bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml: build/bundle-generated
+build/bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml: rbac/auth_proxy_service.yaml
 	install -d $(dir $@)
-	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
+	cp $< $@
 
-build/bundle/manifests/nfs-ext-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml: build/bundle-generated
+build/bundle/manifests/nfs-ext-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml: rbac/auth_proxy_client_clusterrole.yaml
 	install -d $(dir $@)
-	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
-
-# ... And when we're done, the following becomes dead code.
-build/bundle-generated: build/bundle-manifests.yaml
-	@rm -rf $@; mkdir -p $@
-	cat $< | (cd $(dir $@); operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir $(notdir $@))
-	rm build/*Dockerfile
-	rm -rf build/bundle-generated/metadata
+	cp $< $@
 
 build/bundle/metadata/annotations.yaml: bundle.Dockerfile
 	install -d $(dir $@)
