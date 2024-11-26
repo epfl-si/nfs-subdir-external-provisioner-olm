@@ -3,7 +3,7 @@
 # To re-generate a bundle for another specific version without changing the standard setup, you can:
 # - use the VERSION as arg of the bundle target (e.g make bundle VERSION=0.0.2)
 # - use environment variables to overwrite this value (e.g export VERSION=0.0.2)
-VERSION ?= 0.0.21
+VERSION ?= 0.0.22
 
 # CHANNELS define the bundle channels used in the bundle.
 # Add a new line here if you would like to change its default config. (E.g CHANNELS = "candidate,fast,stable")
@@ -147,10 +147,10 @@ bundle-push: ## Push the bundle image.
 	docker push $(BUNDLE_IMG)
 
 bundle: \
-    bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml \
-    bundle/manifests/nfs-ext-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml \
-    bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml \
-    bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml \
+    bundle/manifests/auth_proxy_client_clusterrole.yaml \
+    bundle/manifests/auth_proxy_service.yaml \
+    bundle/manifests/clusterserviceversion.yaml \
+    bundle/manifests/nfssubdirprovisioner_crd.yaml \
     bundle/metadata/annotations.yaml
 	operator-sdk bundle validate $@
 	touch $@
@@ -163,7 +163,7 @@ bundle: \
 # idempotent command i.e. one that both reads and writes from the same
 # file? 🤷 Here, we make sure to put that stuff in a temporary
 # directory, so as to clearly segregate inputs from outputs.
-bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: \
+bundle/manifests/clusterserviceversion.yaml: \
   deploy/manager.yaml \
   nfssubdirprovisioner_crd.yaml \
   $(wildcard rbac/*.yaml) \
@@ -179,18 +179,14 @@ bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml:
 	    echo; echo "---"; \
 	  done ) | \
 	  (cd bundle/csv-tmp; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir .)
-	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < bundle/csv-tmp/manifests/$(notdir $@) > $@
+	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < $$(find bundle/csv-tmp/manifests/ -name *.clusterserviceversion.yaml) > $@
 	rm -rf bundle/csv-tmp
 
-bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml: nfssubdirprovisioner_crd.yaml
+bundle/manifests/nfssubdirprovisioner_crd.yaml: nfssubdirprovisioner_crd.yaml
 	install -d $(dir $@)
 	cp $< $@
 
-bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml: rbac/auth_proxy_service.yaml
-	install -d $(dir $@)
-	cp $< $@
-
-bundle/manifests/nfs-ext-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml: rbac/auth_proxy_client_clusterrole.yaml
+bundle/manifests/%.yaml: rbac/%.yaml
 	install -d $(dir $@)
 	cp $< $@
 
