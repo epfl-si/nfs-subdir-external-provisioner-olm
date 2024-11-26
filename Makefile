@@ -138,6 +138,9 @@ _subst_manager_image := sed -e 's|^\#\( *image: \)controller:latest|\1 $(CONTROL
 build/bundle-generated: build/bundle-manifests.yaml
 	@rm -rf $@; mkdir -p $@
 	cat $< | (cd $(dir $@); operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir $(notdir $@))
+	sed -i .bak 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' \
+	    build/bundle-generated/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml
+
 	rm build/*Dockerfile
 
 build/bundle: \
@@ -158,7 +161,7 @@ build/bundle/manifests/nfs-ext-olm-metrics-reader_rbac.authorization.k8s.io_v1_c
 
 build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: build/bundle-generated
 	install -d $(dir $@)
-	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < $(patsubst build/bundle/%, build/bundle-generated/%, $@) > $@
+	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
 
 build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml: build/bundle-generated
 	install -d $(dir $@)
