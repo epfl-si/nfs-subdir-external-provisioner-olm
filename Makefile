@@ -133,6 +133,7 @@ build/bundle: \
     build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml \
     build/bundle/metadata/annotations.yaml
 	operator-sdk bundle validate $@
+	touch $@
 
 build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: \
   deploy/manager.yaml \
