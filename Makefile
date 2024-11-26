@@ -102,12 +102,12 @@ docker-buildx: test ## Build and push docker image for the manager for cross-pla
 ##@ Deployment
 
 .PHONY: install
-install: kustomize ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl apply -f -
+install: ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+	kubectl apply -f nfssubdirprovisioner_crd.yaml
 
 .PHONY: uninstall
-uninstall: kustomize ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/crd | kubectl delete -f -
+uninstall: ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
+	kubectl delete -f nfssubdirprovisioner_crd.yaml
 
 .PHONY: deploy
 deploy: kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
@@ -130,19 +130,12 @@ build:
 build/bundle-manifests.yaml: build deploy/manager.yaml
 	$(_subst_manager_image) deploy/manager.yaml > $@
 	echo "---" >> $@
+	cat nfssubdirprovisioner_crd.yaml >> $@
+	echo "---" >> $@
 # TODO: disintermediate kustomize, here at the very least.
 	$(KUSTOMIZE) build config/manifests >> $@
 
 _subst_manager_image := sed -e 's|^\#\( *image: \)controller:latest|\1 $(CONTROLLER_IMG)|'
-
-build/bundle-generated: build/bundle-manifests.yaml
-	@rm -rf $@; mkdir -p $@
-# TODO: we don't really need to go through `operator-sdk generate bundle` for the remainder of these files.
-# Pull them directly out of source code instead.
-	cat $< | (cd $(dir $@); operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir $(notdir $@))
-	rm build/*Dockerfile
-	rm -rf build/bundle-generated/metadata
-	rm build/bundle-generated/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml   # We don't use that one; see next target
 
 build/bundle: \
     build/bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml \
@@ -152,6 +145,19 @@ build/bundle: \
     build/bundle/metadata/annotations.yaml
 	operator-sdk bundle validate $@
 
+build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: build/bundle-manifests.yaml
+	@rm -rf build/csv-tmp
+	cat $< | (cd build; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir csv-tmp)
+	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < build/csv-tmp/manifests/$(notdir $@) > $@
+	rm -rf build/csv-tmp
+
+build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml: nfssubdirprovisioner_crd.yaml
+	install -d $(dir $@)
+	cp $< $@
+
+# TODO: we don't really need to go through `operator-sdk generate bundle` for the last two
+# build/bundle/manifests/ targets below.
+# Pull them directly out of source code instead, like we did for the other targets above.
 build/bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml: build/bundle-generated
 	install -d $(dir $@)
 	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
@@ -160,15 +166,12 @@ build/bundle/manifests/nfs-ext-olm-metrics-reader_rbac.authorization.k8s.io_v1_c
 	install -d $(dir $@)
 	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
 
-build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: build/bundle-manifests.yaml
-	@rm -rf build/csv-tmp
-	cat $< | (cd build; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir csv-tmp)
-	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < build/csv-tmp/manifests/$(notdir $@) > $@
-	rm -rf build/csv-tmp
-
-build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml: build/bundle-generated
-	install -d $(dir $@)
-	cp $(patsubst build/bundle/%, build/bundle-generated/%, $@) $@
+# ... And when we're done, the following becomes dead code.
+build/bundle-generated: build/bundle-manifests.yaml
+	@rm -rf $@; mkdir -p $@
+	cat $< | (cd $(dir $@); operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir $(notdir $@))
+	rm build/*Dockerfile
+	rm -rf build/bundle-generated/metadata
 
 build/bundle/metadata/annotations.yaml: bundle.Dockerfile
 	install -d $(dir $@)
