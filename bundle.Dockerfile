@@ -15,6 +15,6 @@ LABEL operators.operatorframework.io.test.mediatype.v1=scorecard+v1
 LABEL operators.operatorframework.io.test.config.v1=tests/scorecard/
 
 # Copy files to locations specified by labels.
-COPY build/bundle/manifests /manifests/
-COPY build/bundle/metadata /metadata/
+COPY bundle/manifests /manifests/
+COPY bundle/metadata /metadata/
 COPY tests/scorecard /tests/scorecard/

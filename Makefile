@@ -139,19 +139,19 @@ docker-buildx: test ## Build and push docker image for the manager for cross-pla
 # merging them.
 
 .PHONY: bundle-build
-bundle-build: build/bundle ## Generate bundle manifests and metadata, validate generated files
+bundle-build: bundle ## Generate bundle manifests and metadata, validate generated files
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
 .PHONY: bundle-push
 bundle-push: ## Push the bundle image.
 	docker push $(BUNDLE_IMG)
 
-build/bundle: \
-    build/bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml \
-    build/bundle/manifests/nfs-ext-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml \
-    build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml \
-    build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml \
-    build/bundle/metadata/annotations.yaml
+bundle: \
+    bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml \
+    bundle/manifests/nfs-ext-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml \
+    bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml \
+    bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml \
+    bundle/metadata/annotations.yaml
 	operator-sdk bundle validate $@
 	touch $@
 
@@ -163,13 +163,14 @@ build/bundle: \
 # idempotent command i.e. one that both reads and writes from the same
 # file? 🤷 Here, we make sure to put that stuff in a temporary
 # directory, so as to clearly segregate inputs from outputs.
-build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: \
+bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: \
   deploy/manager.yaml \
   nfssubdirprovisioner_crd.yaml \
   $(wildcard rbac/*.yaml) \
   nfssubdirprovisioner_example.yaml \
   clusterserviceversion-tmpl.yaml
-	@rm -rf build/csv-tmp
+	install -d $(dir $@)
+	@rm -rf bundle/csv-tmp; mkdir -p bundle/csv-tmp
 	( for src in $^; do \
 	    cat $$src | case "$$src" in \
 	      deploy/manager.yaml) $(_subst_manager_image) ;; \
@@ -177,23 +178,23 @@ build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion
 	    esac ; \
 	    echo; echo "---"; \
 	  done ) | \
-	  (cd build; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir csv-tmp)
-	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < build/csv-tmp/manifests/$(notdir $@) > $@
-	rm -rf build/csv-tmp
+	  (cd bundle/csv-tmp; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir .)
+	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < bundle/csv-tmp/manifests/$(notdir $@) > $@
+	rm -rf bundle/csv-tmp
 
-build/bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml: nfssubdirprovisioner_crd.yaml
+bundle/manifests/nfs.epfl.ch_nfssubdirprovisioners.yaml: nfssubdirprovisioner_crd.yaml
 	install -d $(dir $@)
 	cp $< $@
 
-build/bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml: rbac/auth_proxy_service.yaml
+bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml: rbac/auth_proxy_service.yaml
 	install -d $(dir $@)
 	cp $< $@
 
-build/bundle/manifests/nfs-ext-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml: rbac/auth_proxy_client_clusterrole.yaml
+bundle/manifests/nfs-ext-olm-metrics-reader_rbac.authorization.k8s.io_v1_clusterrole.yaml: rbac/auth_proxy_client_clusterrole.yaml
 	install -d $(dir $@)
 	cp $< $@
 
-build/bundle/metadata/annotations.yaml: bundle.Dockerfile
+bundle/metadata/annotations.yaml: bundle.Dockerfile
 	install -d $(dir $@)
 	( echo "annotations:" ; \
 	  sed -ne 's/^LABEL \(.*\)=\(.*\)$$/  \1: \2/p' < $< ) > $@
@@ -224,5 +225,5 @@ endif
 
 .PHONY: clean
 clean: ## Remove intermediate files and built Docker images
-	rm -rf build
+	rm -rf bundle
 	docker rmi $(IMG) $(BUNDLE_IMG) || true
