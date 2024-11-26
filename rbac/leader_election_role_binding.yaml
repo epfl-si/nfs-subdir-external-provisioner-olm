@@ -15,4 +15,4 @@ roleRef:
 subjects:
 - kind: ServiceAccount
   name: nfs-ext-olm-controller-manager
-  namespace: nfs-subdir-ext-provisioner-olm-system
+  namespace: nfs-ext-olm-system
