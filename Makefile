@@ -51,6 +51,7 @@ CONTROLLER_IMG ?= $(shell echo $(IMG) \
 .PHONY: all
 all: docker-build
 
+#############################################################################
 ##@ General
 
 # The help target prints out all targets with their descriptions organized
@@ -68,11 +69,37 @@ all: docker-build
 help: ## Display this help.
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_0-9-]+:.*?##/ { printf "  \033[36m%-15s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
 
-##@ Build
-
 .PHONY: run
 run: helm-operator ## Run against the configured Kubernetes cluster in ~/.kube/config
 	$(HELM_OPERATOR) run
+
+
+#############################################################################
+##@ Deploying from source (for testing)
+
+.PHONY: install
+install: ## Install CRDs into the K8s cluster specified in ~/.kube/config.
+	kubectl apply -f nfssubdirprovisioner_crd.yaml
+
+.PHONY: uninstall
+uninstall: ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
+	kubectl delete -f nfssubdirprovisioner_crd.yaml
+
+_subst_manager_image := sed -e 's|^\#\( *image: \)controller:latest|\1 $(CONTROLLER_IMG)|'
+
+.PHONY: deploy
+deploy: ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	for rbac in rbac/*; do  kubectl apply -f $$rbac; done
+	$(_subst_manager_image) < deploy/manager.yaml | \
+	  kubectl apply -f -
+
+.PHONY: undeploy
+undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
+	for rbac in rbac/*; do kubectl delete -f $$rbac; done
+	kubectl delete -f deploy/manager.yaml
+
+#############################################################################
+##@ Building the main image
 
 .PHONY: docker-build
 docker-build: ## Build docker image with the manager.
@@ -99,32 +126,25 @@ docker-buildx: test ## Build and push docker image for the manager for cross-pla
 	- docker buildx rm project-v3-builder
 	rm Dockerfile.cross
 
-##@ Deployment
-
-.PHONY: install
-install: ## Install CRDs into the K8s cluster specified in ~/.kube/config.
-	kubectl apply -f nfssubdirprovisioner_crd.yaml
-
-.PHONY: uninstall
-uninstall: ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
-	kubectl delete -f nfssubdirprovisioner_crd.yaml
-
-.PHONY: deploy
-deploy: ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	for rbac in rbac/*; do  kubectl apply -f $$rbac; done
-	$(_subst_manager_image) < deploy/manager.yaml | \
-	  kubectl apply -f -
-
-.PHONY: undeploy
-undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
-	for rbac in rbac/*; do kubectl delete -f $$rbac; done
-	kubectl delete -f deploy/manager.yaml
+###########################################################################
+##@ Building the bundle image
+#
+# The bundle image only contains YAML files and Docker label metadata.
+# It has no binaries, and no container or pod ever gets created out of
+# it. The bundle image is kept small enough to be swallowed whole by
+# e.g. `opm render`, (a golang-library equivalent of) which will be
+# run by the OLM operator. This is the reason why be build and push it
+# separately from the main image (the one with the controller binary
+# inside); even though technically, nothing would prevent us from
+# merging them.
 
 .PHONY: bundle-build
 bundle-build: build/bundle ## Generate bundle manifests and metadata, validate generated files
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
-_subst_manager_image := sed -e 's|^\#\( *image: \)controller:latest|\1 $(CONTROLLER_IMG)|'
+.PHONY: bundle-push
+bundle-push: ## Push the bundle image.
+	docker push $(BUNDLE_IMG)
 
 build/bundle: \
     build/bundle/manifests/nfs-ext-olm-controller-manager-metrics-service_v1_service.yaml \
@@ -135,6 +155,14 @@ build/bundle: \
 	operator-sdk bundle validate $@
 	touch $@
 
+# The main task here is to preprocess the ClusterServiceVersion object
+# using the `operator-sdk bundle generate` command; fleshing out its
+# CRD(s), RBAC, `alm-examples` annotation, and more. The officially
+# supported project layout invokes that task out of a Makefile (like
+# we do); yet `operator-sdk bundle generate` styles itself as an
+# idempotent command i.e. one that both reads and writes from the same
+# file? 🤷 Here, we make sure to put that stuff in a temporary
+# directory, so as to clearly segregate inputs from outputs.
 build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: \
   deploy/manager.yaml \
   nfssubdirprovisioner_crd.yaml \
@@ -170,13 +198,8 @@ build/bundle/metadata/annotations.yaml: bundle.Dockerfile
 	( echo "annotations:" ; \
 	  sed -ne 's/^LABEL \(.*\)=\(.*\)$$/  \1: \2/p' < $< ) > $@
 
-.PHONY: bundle-push
-bundle-push: ## Push the bundle image.
-	docker push $(BUNDLE_IMG)
-
-
 #############################################################################
-##@ Downloading binaries
+##@ Downloading helper binaries
 
 OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 ARCH := $(shell uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')
