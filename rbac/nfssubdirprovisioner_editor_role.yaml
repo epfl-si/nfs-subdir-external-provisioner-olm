@@ -1,23 +1,26 @@
-# permissions for end users to view nfssubdirprovisioners.
+# permissions for end users to edit nfssubdirprovisioners.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   labels:
     app.kubernetes.io/name: clusterrole
-    app.kubernetes.io/instance: nfssubdirprovisioner-viewer-role
+    app.kubernetes.io/instance: nfssubdirprovisioner-editor-role
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: nfs-subdir-ext-provisioner-olm
     app.kubernetes.io/part-of: nfs-subdir-ext-provisioner-olm
-    app.kubernetes.io/managed-by: kustomize
-  name: nfssubdirprovisioner-viewer-role
+  name: nfs-ext-olm-nfssubdirprovisioner-editor-role
 rules:
 - apiGroups:
   - nfs.epfl.ch
   resources:
   - nfssubdirprovisioners
   verbs:
+  - create
+  - delete
   - get
   - list
+  - patch
+  - update
   - watch
 - apiGroups:
   - nfs.epfl.ch

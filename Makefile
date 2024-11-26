@@ -110,14 +110,14 @@ uninstall: ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
 	kubectl delete -f nfssubdirprovisioner_crd.yaml
 
 .PHONY: deploy
-deploy: kustomize ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/default | kubectl apply -f -
+deploy: ## Deploy controller to the K8s cluster specified in ~/.kube/config.
+	set -e ; for rbac in rbac/*; do  kubectl apply -f $$rbac; done
 	$(_subst_manager_image) < deploy/manager.yaml | \
 	  kubectl apply -f -
 
 .PHONY: undeploy
-undeploy: kustomize ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
-	$(KUSTOMIZE) build config/default | kubectl delete -f -
+undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
+	set -e ; for rbac in rbac/*; do  kubectl delete -f $$rbac; done
 	kubectl delete -f deploy/manager.yaml
 
 .PHONY: bundle-build
@@ -134,8 +134,10 @@ build/bundle-manifests.yaml: build deploy/manager.yaml
 	echo "---" >> $@
 	cat nfssubdirprovisioner_example.yaml >> $@
 	echo "---" >> $@
-# TODO: disintermediate kustomize, here at the very least.
-	$(KUSTOMIZE) build config/manifests >> $@
+	set -e -x; for rbac in rbac/* ; do \
+	  cat $$rbac ; \
+	  echo "---" ; \
+	done >> $@
 
 _subst_manager_image := sed -e 's|^\#\( *image: \)controller:latest|\1 $(CONTROLLER_IMG)|'
 
@@ -150,14 +152,12 @@ build/bundle: \
 build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml: \
   deploy/manager.yaml \
   nfssubdirprovisioner_crd.yaml \
-  $(wildcard config/rbac/*.yaml) \
+  $(wildcard rbac/*.yaml) \
   nfssubdirprovisioner_example.yaml \
   clusterserviceversion-tmpl.yaml
 	@rm -rf build/csv-tmp
 	( for src in $^; do \
 	    cat $$src | case "$$src" in \
-	      config/rbac/*) sed 's|^  name: |  name: nfs-ext-olm-|' | \
-	                     sed 's|^  namespace: .*|  namespace: nfs-ext-olm-system|' ;; \
 	      deploy/manager.yaml) $(_subst_manager_image) ;; \
 	      *) cat ;; \
 	    esac ; \
@@ -205,22 +205,6 @@ bundle-push: ## Push the bundle image.
 
 OS := $(shell uname -s | tr '[:upper:]' '[:lower:]')
 ARCH := $(shell uname -m | sed 's/x86_64/amd64/' | sed 's/aarch64/arm64/')
-
-.PHONY: kustomize
-KUSTOMIZE = $(shell pwd)/bin/kustomize
-kustomize: ## Download kustomize locally if necessary.
-ifeq (,$(wildcard $(KUSTOMIZE)))
-ifeq (,$(shell which kustomize 2>/dev/null))
-	@{ \
-	set -e ;\
-	mkdir -p $(dir $(KUSTOMIZE)) ;\
-	curl -sSLo - https://github.com/kubernetes-sigs/kustomize/releases/download/kustomize/v4.5.7/kustomize_v4.5.7_$(OS)_$(ARCH).tar.gz | \
-	tar xzf - -C bin/ ;\
-	}
-else
-KUSTOMIZE = $(shell which kustomize)
-endif
-endif
 
 .PHONY: helm-operator
 HELM_OPERATOR = $(shell pwd)/bin/helm-operator

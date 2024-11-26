@@ -7,13 +7,12 @@ metadata:
     app.kubernetes.io/component: rbac
     app.kubernetes.io/created-by: nfs-subdir-ext-provisioner-olm
     app.kubernetes.io/part-of: nfs-subdir-ext-provisioner-olm
-    app.kubernetes.io/managed-by: kustomize
-  name: leader-election-rolebinding
+  name: nfs-ext-olm-leader-election-rolebinding
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: Role
-  name: leader-election-role
+  name: nfs-ext-olm-leader-election-role
 subjects:
 - kind: ServiceAccount
-  name: controller-manager
-  namespace: system
+  name: nfs-ext-olm-controller-manager
+  namespace: nfs-subdir-ext-provisioner-olm-system

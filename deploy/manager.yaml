@@ -23,7 +23,6 @@ metadata:
     app.kubernetes.io/component: manager
     app.kubernetes.io/created-by: nfs-subdir-ext-provisioner-olm
     app.kubernetes.io/part-of: nfs-subdir-ext-provisioner-olm
-    app.kubernetes.io/managed-by: kustomize
   name: nfs-ext-olm-system
 ---
 apiVersion: apps/v1
