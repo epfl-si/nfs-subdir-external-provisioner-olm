@@ -124,9 +124,6 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 bundle-build: build/bundle ## Generate bundle manifests and metadata, validate generated files
 	docker build -f bundle.Dockerfile -t $(BUNDLE_IMG) .
 
-build:
-	@mkdir $@
-
 _subst_manager_image := sed -e 's|^\#\( *image: \)controller:latest|\1 $(CONTROLLER_IMG)|'
 
 build/bundle: \
