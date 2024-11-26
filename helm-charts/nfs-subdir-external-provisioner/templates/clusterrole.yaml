@@ -21,6 +21,15 @@ rules:
   - apiGroups: [""]
     resources: ["events"]
     verbs: ["create", "update", "patch"]
+  # We need to mount NFS things
+  - apiGroups:
+    - security.openshift.io
+    resources:
+    - securitycontextconstraints
+    resourceNames:
+    - hostmount-anyuid
+    verbs:
+    - use
 {{- if .Values.podSecurityPolicy.enabled }}
   - apiGroups:      ['extensions']
     resources:      ['podsecuritypolicies']
