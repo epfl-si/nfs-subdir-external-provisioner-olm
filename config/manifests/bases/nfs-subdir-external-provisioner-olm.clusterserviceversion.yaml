@@ -198,10 +198,6 @@ spec:
       IEMgMTIuNzQ0IDExLjY1OSAxMi40MzIgMTEuMzQ3IDEyLjA1MSAxMS4zNDcgWiIgc3R5bGU9IiI+
       PC9wYXRoPgogIDwvZz4KPC9zdmc+Cg==
     mediatype: image/svg+xml
-  install:
-    spec:
-      deployments: null
-    strategy: ""
   installModes:
   - supported: false
     type: OwnNamespace
