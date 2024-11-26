@@ -111,13 +111,13 @@ uninstall: ## Uninstall CRDs from the K8s cluster specified in ~/.kube/config.
 
 .PHONY: deploy
 deploy: ## Deploy controller to the K8s cluster specified in ~/.kube/config.
-	set -e ; for rbac in rbac/*; do  kubectl apply -f $$rbac; done
+	for rbac in rbac/*; do  kubectl apply -f $$rbac; done
 	$(_subst_manager_image) < deploy/manager.yaml | \
 	  kubectl apply -f -
 
 .PHONY: undeploy
 undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/config.
-	set -e ; for rbac in rbac/*; do  kubectl delete -f $$rbac; done
+	for rbac in rbac/*; do kubectl delete -f $$rbac; done
 	kubectl delete -f deploy/manager.yaml
 
 .PHONY: bundle-build
