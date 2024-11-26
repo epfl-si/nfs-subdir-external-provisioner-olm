@@ -132,6 +132,8 @@ build/bundle-manifests.yaml: build deploy/manager.yaml
 	echo "---" >> $@
 	cat nfssubdirprovisioner_crd.yaml >> $@
 	echo "---" >> $@
+	cat nfssubdirprovisioner_example.yaml >> $@
+	echo "---" >> $@
 # TODO: disintermediate kustomize, here at the very least.
 	$(KUSTOMIZE) build config/manifests >> $@
 
@@ -149,7 +151,7 @@ build/bundle/manifests/nfs-subdir-external-provisioner-olm.clusterserviceversion
   deploy/manager.yaml \
   nfssubdirprovisioner_crd.yaml \
   $(wildcard config/rbac/*.yaml) \
-  config/samples/nfs_v1alpha1_nfssubdirprovisioner.yaml \
+  nfssubdirprovisioner_example.yaml \
   config/manifests/bases/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml
 	@rm -rf build/csv-tmp
 	( for src in $^; do \

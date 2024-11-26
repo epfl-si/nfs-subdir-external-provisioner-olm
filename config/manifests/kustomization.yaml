@@ -3,4 +3,3 @@
 resources:
 - bases/nfs-subdir-external-provisioner-olm.clusterserviceversion.yaml
 - ../default
-- ../samples
