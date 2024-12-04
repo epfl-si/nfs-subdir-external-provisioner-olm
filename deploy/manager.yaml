@@ -28,8 +28,6 @@ metadata:
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  # The name and namespace must match the ones that `operator-sdk
-  # generate bundle` expects, lest it ignore the Deployment entirely.
   name: nfs-ext-olm-controller-manager
   namespace: nfs-ext-olm-system
   labels:
