@@ -178,6 +178,14 @@ bundle/manifests/clusterserviceversion.yaml: \
 	  done ) | \
 	  (cd bundle/csv-tmp; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir .)
 	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < $$(find bundle/csv-tmp/manifests/ -name *.clusterserviceversion.yaml) > $@
+
+# Some sanity checks against the produced ClusterServiceVersion - If
+# your build fails here, check for syntax errors in your source YAML,
+# or name mismatches with respect to what `operator-sdk generate
+# bundle` expects:
+	if ! grep ISAS-FSD $@ >/dev/null; then exit 200; fi
+	if grep 'deployments: \[\]' $@  >/dev/null; then exit 201; fi
+
 	rm -rf bundle/csv-tmp
 
 bundle/manifests/nfssubdirprovisioner_crd.yaml: nfssubdirprovisioner_crd.yaml
