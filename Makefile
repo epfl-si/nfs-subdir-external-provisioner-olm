@@ -176,6 +176,7 @@ bundle/manifests/clusterserviceversion.yaml: \
 	    esac ; \
 	    echo; echo "---"; \
 	  done ) | \
+	  ( yq . || cat ) | \
 	  (cd bundle/csv-tmp; operator-sdk generate bundle --package nfs-subdir-external-provisioner-olm $(BUNDLE_GEN_FLAGS) --verbose --output-dir .)
 	sed 's|project_layout: unknown|project_layout: helm.sdk.operatorframework.io/v1|' < $$(find bundle/csv-tmp/manifests/ -name *.clusterserviceversion.yaml) > $@
 
